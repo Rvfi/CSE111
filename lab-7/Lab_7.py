@@ -5,36 +5,30 @@ from sqlite3 import Error
 def openConnection(_dbFile):
     print("++++++++++++++++++++++++++++++++++")
     print("Open database: ", _dbFile)
-
     conn = None
     try:
         conn = sqlite3.connect(_dbFile)
         print("success")
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
-
     return conn
 
 
 def closeConnection(_conn, _dbFile):
     print("++++++++++++++++++++++++++++++++++")
     print("Close database: ", _dbFile)
-
     try:
         _conn.close()
         print("success")
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def createTable(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Create table")
-
     try:
         sql = """ CREATE TABLE IF NOT EXISTS warehouse (
                       w_warehousekey DECIMAL(9,0) NOT NULL,
@@ -47,37 +41,31 @@ def createTable(_conn):
         print("Table created successfully")
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def dropTable(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Drop tables")
-
     try:
         sql = "DROP TABLE IF EXISTS warehouse"
         _conn.execute(sql)
         print("Table dropped successfully")
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def populateTable(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Populate table")
-
     try:
         cursor = _conn.cursor()
-
-        # Retrieve each supplier and their corresponding nation based on the quantity of line items
         supplier_query = """
-        SELECT s.s_suppkey, s.s_name, n.n_nationkey, n.n_name, p.p_size, SUM(l.l_quantity) as total_quantity
+        SELECT s.s_suppkey, s.s_name, n.n_nationkey, n.n_name, SUM(l.l_quantity * p.p_size) as total_quantity
         FROM supplier s
-        JOIN nation n ON s.s_nationkey = n.n_nationkey
         JOIN lineitem l ON s.s_suppkey = l.l_suppkey
+        JOIN nation n ON s.s_nationkey = n.n_nationkey
         JOIN part p ON l.l_partkey = p.p_partkey
         GROUP BY s.s_suppkey, n.n_nationkey
         ORDER BY s.s_suppkey, total_quantity DESC, n.n_name ASC;
@@ -85,38 +73,43 @@ def populateTable(_conn):
         cursor.execute(supplier_query)
         suppliers_data = cursor.fetchall()
 
-        # Process data to determine top 3 nations for each supplier and calculate capacity
         warehouse_key = 1
+        last_suppkey = None
+        count = 0
+        max_qty = 0
+
         for row in suppliers_data:
-            suppkey, supp_name, nationkey, nation_name, part_size, total_qty = row
+            suppkey, supp_name, nationkey, nation_name, total_qty = row
+            if suppkey != last_suppkey:
+                last_suppkey = suppkey
+                count = 0
+                max_qty = 0
 
-            # Create warehouse name
-            w_name = f"{supp_name} {nation_name}"
-            # Calculate capacity (triple the total part size)
-            capacity = part_size * total_qty * 3
-
-            # Insert data into warehouse table
-            insert_query = """
-            INSERT INTO warehouse (w_warehousekey, w_name, w_capacity, w_suppkey, w_nationkey)
-            VALUES (?, ?, ?, ?, ?);
-            """
-            cursor.execute(
-                insert_query, (warehouse_key, w_name, capacity, suppkey, nationkey)
-            )
-            warehouse_key += 1
+            if count < 3:
+                if total_qty > max_qty:
+                    max_qty = total_qty
+                w_name = f"{supp_name}____{nation_name}"
+                capacity = 3 * max_qty  # Triple of max part size
+                insert_query = """
+                INSERT INTO warehouse (w_warehousekey, w_name, w_capacity, w_suppkey, w_nationkey)
+                VALUES (?, ?, ?, ?, ?);
+                """
+                cursor.execute(
+                    insert_query, (warehouse_key, w_name, capacity, suppkey, nationkey)
+                )
+                warehouse_key += 1
+                count += 1
 
         _conn.commit()
         print("Table populated successfully")
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def Q1(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Q1")
-
     try:
         cursor = _conn.cursor()
         query = "SELECT * FROM warehouse ORDER BY w_warehousekey"
@@ -133,14 +126,12 @@ def Q1(_conn):
         output.close()
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def Q2(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Q2")
-
     try:
         cursor = _conn.cursor()
         query = """
@@ -163,14 +154,12 @@ def Q2(_conn):
         output.close()
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def Q3(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Q3")
-
     try:
         input_file = open("input/3.in", "r")
         nation = input_file.readline().strip()
@@ -198,14 +187,12 @@ def Q3(_conn):
         output.close()
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def Q4(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Q4")
-
     try:
         input_file = open("input/4.in", "r")
         region = input_file.readline().strip()
@@ -235,14 +222,12 @@ def Q4(_conn):
         output.close()
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def Q5(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Q5")
-
     try:
         input_file = open("input/5.in", "r")
         nation = input_file.readline().strip()
@@ -272,26 +257,21 @@ def Q5(_conn):
         output.close()
     except Error as e:
         print(e)
-
     print("++++++++++++++++++++++++++++++++++")
 
 
 def main():
     database = r"tpch.sqlite"
-
-    # create a database connection
     conn = openConnection(database)
     with conn:
         dropTable(conn)
         createTable(conn)
         populateTable(conn)
-
         Q1(conn)
         Q2(conn)
         Q3(conn)
         Q4(conn)
         Q5(conn)
-
     closeConnection(conn, database)
 
 
