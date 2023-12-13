@@ -1,3 +1,4 @@
+.headers ON
 -- Drop the existing t2 trigger if it exists
 DROP TRIGGER IF EXISTS t2;
 

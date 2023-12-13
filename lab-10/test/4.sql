@@ -1,3 +1,4 @@
+.headers ON
 -- Drop existing triggers if they exist
 DROP TRIGGER IF EXISTS update_priority_add;
 DROP TRIGGER IF EXISTS update_priority_delete;

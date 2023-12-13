@@ -1,3 +1,4 @@
+.headers ON
 -- Trigger to remove tuples from partsupp and lineitem when a part is deleted
 CREATE TRIGGER t5
 BEFORE DELETE ON part

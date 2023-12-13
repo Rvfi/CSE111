@@ -1,3 +1,4 @@
+.headers ON
 -- Trigger to reset customer comment to 'Positive balance' when balance becomes positive
 CREATE TRIGGER t3
 AFTER UPDATE ON customer

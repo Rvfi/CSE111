@@ -1,3 +1,4 @@
+.headers ON
 DROP TRIGGER IF EXISTS t1;
 -- Trigger to set order date to '2023-12-01' for new orders
 -- Trigger to set order date to '2023-12-01' for new orders
